@@ -54,7 +54,7 @@
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 999; visibility: hidden; opacity: 0; transition: opacity 0.3s, visibility 0.3s;}
         .overlay.active { visibility: visible; opacity: 1; }
 
-        /* RICH TEXT FORMATTING (For future Admin updates with Bolding & Bullets) */
+        /* RICH TEXT FORMATTING */
         .rich-text-content ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 0.5rem; }
         .rich-text-content ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 0.5rem; }
         .rich-text-content li { margin-bottom: 0.25rem; }
@@ -63,7 +63,7 @@
         /* Read-Only Table Overrides */
         .editable-cell { min-width: 30px; max-width: 100%; word-break: break-word; white-space: pre-wrap; cursor: default; }
 
-        /* Print Layout Rules for Master Document */
+        /* Print Layout Rules */
         @page { size: A4; margin: 10mm; }
         @media print {
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: white !important; padding: 0 !important; margin: 0 !important; }
@@ -81,6 +81,7 @@
 </head>
 <body>
     <div id="root">
+        <!-- Temporary Native Loader -->
         <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #1e3a8a;">
             <div class="native-loader"></div>
             <div style="font-weight: bold;">Verifying Records...</div>
@@ -99,7 +100,7 @@
         // DUAL DATABASE ARCHITECTURE
         // ==========================================
         
-        // 1. PRIVATE DATABASE (Patient Records)
+        // 1. PRIVATE DATABASE
         const recordsConfig = {
             apiKey: "AIzaSyCPhZY9CrsXJHIr5nBPaGPNVHsc70yfVus",
             authDomain: "patient-records-arpan.firebaseapp.com",
@@ -112,7 +113,7 @@
         const authRecords = getAuth(appRecords);
         const dbRecords = getFirestore(appRecords);
         
-        // 2. PUBLIC DATABASE (Site Info & Exercises)
+        // 2. PUBLIC DATABASE
         const siteConfig = {
             apiKey: "AIzaSyAuk3feAZjoHF2VwdWtA0F4lhQKarU0w-4", 
             authDomain: "clinic-bdf92.firebaseapp.com",
@@ -124,7 +125,7 @@
 
         const slugify = (text) => text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
-        // Reusable Read-Only Custom Table Component
+        // Reusable Table Component
         function ReadOnlyCustomTable({ table }) {
             let rows = table.rows || [];
             if (typeof rows === 'string') { try { rows = JSON.parse(rows); } catch(e) { rows = []; } }
@@ -174,14 +175,10 @@
             const [verifyPhoneInput, setVerifyPhoneInput] = useState("");
             const [verifyError, setVerifyError] = useState("");
 
-            // Smart Rich Text Formatter (Handles both old Plain Text and new HTML)
+            // Smart Rich Text Formatter
             const renderRichText = (text) => {
                 if (!text) return { __html: '' };
-                // If it already has HTML tags from Quill, just render them
-                if (/<[a-z][\s\S]*>/i.test(text)) {
-                    return { __html: text };
-                }
-                // Otherwise, it's plain text. Convert newlines to HTML breaks so it formats correctly
+                if (/<[a-z][\s\S]*>/i.test(text)) return { __html: text };
                 return { __html: text.replace(/\n/g, '<br/>') };
             };
 
@@ -294,7 +291,15 @@
                 window.location.hash = '';
             };
 
-            if (isCheckingAuth) return null;
+            // Smooth Loading Screen
+            if (isCheckingAuth) {
+                return (
+                    <div className="min-h-screen bg-appbg flex flex-col items-center justify-center font-sans">
+                        <div className="w-12 h-12 border-4 border-ice border-t-azure rounded-full animate-spin mb-4"></div>
+                        <div className="text-lg font-black text-navy tracking-tight">Verifying Secure Connection...</div>
+                    </div>
+                );
+            }
 
             const renderHeader = () => (
                 <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-4 max-w-6xl mx-auto w-full print-hidden">
@@ -335,7 +340,7 @@
                             <li><a href="/products" className="main-nav-link"><i className="ph-bold ph-shopping-bag" style={{marginRight: '12px', fontSize: '1.3rem', color: '#475569'}}></i> Wellness Products</a></li>
                             <li><a href="/articles" className="main-nav-link"><i className="ph-bold ph-article" style={{marginRight: '12px', fontSize: '1.3rem', color: '#475569'}}></i> Health Articles</a></li>
                             <li><a href="/exercises" className="main-nav-link"><i className="ph-bold ph-person-simple-walk" style={{marginRight: '12px', fontSize: '1.3rem', color: '#475569'}}></i> Rehabilitation Exercises</a></li>
-                            <li><a href="/prescription" className="main-nav-link" style={{color: '#1d4ed8', backgroundColor: '#eff6ff'}}><i className="ph-bold ph-folder-open" style={{marginRight: '12px', fontSize: '1.3rem', color: '#1d4ed8'}}></i> Patient Records</a></li>
+                            <li><a href="/prescription.html" className="main-nav-link" style={{color: '#1d4ed8', backgroundColor: '#eff6ff'}}><i className="ph-bold ph-folder-open" style={{marginRight: '12px', fontSize: '1.3rem', color: '#1d4ed8'}}></i> Patient Records</a></li>
                         </ul>
                     </aside>
                 </>
@@ -412,7 +417,7 @@
                                         {prescribedExData.map(ex => {
                                             const params = patientData.exerciseParams?.[ex.id] || {};
                                             return (
-                                                <a key={ex.id} href={`/exercise/${slugify(ex.name)}`} target="_blank" className="border border-slate-200 rounded-xl overflow-hidden group hover:border-azure transition hover:shadow-md flex flex-col cursor-pointer bg-white">
+                                                <a key={ex.id} href={`/?view=exercise&id=${slugify(ex.name)}`} target="_blank" className="border border-slate-200 rounded-xl overflow-hidden group hover:border-azure transition hover:shadow-md flex flex-col cursor-pointer bg-white">
                                                     <div className="w-full h-56 bg-slate-50 flex items-center justify-center p-3 border-b border-slate-100 relative">
                                                         <img src={ex.imageUrl} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition duration-300" />
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition duration-300 backdrop-blur-sm">
@@ -569,7 +574,7 @@
                                 </div>
                                 
                                 <div className="flex flex-col items-center justify-center pt-2 px-6">
-                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/prescription#/' + patientData.id)}`} alt="QR Code" className="w-[85px] h-[85px]" />
+                                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + '/prescription.html#/' + patientData.id)}`} alt="QR Code" className="w-[85px] h-[85px]" />
                                     <span className="text-[11px] font-bold mt-1 text-[#1e40af] text-center leading-tight">Scan for<br/>digital records</span>
                                 </div>
 
@@ -715,4 +720,3 @@
     </script>
 </body>
 </html>
-
